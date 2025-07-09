@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day Counter</title>
+    <style>
+        /* Basic CSS for a clean, modern look */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        /* Hide elements by default */
+        .hidden {
+            display: none;
+        }
+        h1 {
+            font-size: 5rem;
+            font-weight: bold;
+            color: #007aff;
+            margin: 0;
+        }
+        h2 {
+            font-size: 1.5rem;
+            color: #6c757d;
+            margin-bottom: 2rem;
+        }
+        p#phrase {
+            font-size: 1.25rem;
+            font-style: italic;
+            height: 100px; /* Fixed height to prevent layout shifts */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #495057;
+        }
+        button {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button#phrase-button {
+            background-color: #007aff;
+        }
+        button#phrase-button:hover {
+            background-color: #0056b3;
+        }
+        button#phrase-button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        button#save-button {
+            background-color: #34c759;
+        }
+        button#save-button:hover {
+            background-color: #28a745;
+        }
+        input[type="date"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-sizing: border-box; /* Important for padding */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Setup View: Shown only on first visit -->
+        <div id="setup-view">
+            <h2>Welcome!</h2>
+            <p>When did you start your journey?</p>
+            <input type="date" id="start-date-input">
+            <button id="save-button">Save and Begin</button>
+        </div>
+
+        <!-- Main View: Shown after setup -->
+        <div id="main-view" class="hidden">
+            <h2>Day</h2>
+            <h1 id="day-count">0</h1>
+            <p id="phrase">Click the button to get a phrase!</p>
+            <button id="phrase-button">New Phrase</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const API_BASE_URL = "https://us-central1-cainghien.cloudfunctions.net/get-motivational-phrase";
+
+        // --- ELEMENT REFERENCES ---
+        const setupView = document.getElementById('setup-view');
+        const mainView = document.getElementById('main-view');
+        const dayCountElement = document.getElementById('day-count');
+        const phraseElement = document.getElementById('phrase');
+        const phraseButton = document.getElementById('phrase-button');
+        const saveButton = document.getElementById('save-button');
+        const startDateInput = document.getElementById('start-date-input');
+
+        // --- API FUNCTIONS ---
+        async function fetchDayCount(startDate) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/get-day-count?startDate=${startDate}`);
+                const data = await response.json();
+                dayCountElement.textContent = data.day_count || 0;
+            } catch (error) {
+                console.error("Error fetching day count:", error);
+                dayCountElement.textContent = "Error";
+            }
+        }
+
+        async function fetchPhrase() {
+            phraseButton.disabled = true;
+            phraseElement.textContent = "..."; // Loading indicator
+            try {
+                const response = await fetch(`${API_BASE_URL}/get-phrase`);
+                const data = await response.json();
+                phraseElement.textContent = data.phrase || "Try again!";
+            } catch (error) {
+                console.error("Error fetching phrase:", error);
+                phraseElement.textContent = "Could not fetch phrase. Try again.";
+            } finally {
+                phraseButton.disabled = false;
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        phraseButton.addEventListener('click', fetchPhrase);
+
+        saveButton.addEventListener('click', () => {
+            const selectedDate = startDateInput.value;
+            if (selectedDate) {
+                // Save the date to the browser's local storage
+                localStorage.setItem('userStartDate', selectedDate);
+                // Switch to the main view
+                showMainView(selectedDate);
+            }
+        });
+
+        // --- UI LOGIC ---
+        function showMainView(startDate) {
+            setupView.classList.add('hidden');
+            mainView.classList.remove('hidden');
+            fetchDayCount(startDate);
+        }
+
+        function showSetupView() {
+            mainView.classList.add('hidden');
+            setupView.classList.remove('hidden');
+        }
+
+        // --- INITIALIZATION ---
+        // This function runs when the page first loads
+        function init() {
+            const savedDate = localStorage.getItem('userStartDate');
+            if (savedDate) {
+                showMainView(savedDate);
+            } else {
+                showSetupView();
+            }
+        }
+
+        // Start the app!
+        init();
+    </script>
+
+</body>
+</html>
