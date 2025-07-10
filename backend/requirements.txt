@@ -1,0 +1,10 @@
+# Flask is used for its request and jsonify helpers
+Flask==3.0.3
+Flask-Cors==4.0.1
+
+
+# Google AI and its core dependencies
+google-generativeai==0.7.2
+google-api-python-client
+google-auth-httplib2
+google-auth
